@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
 
 namespace AuthenticationJwt.Web.Controllers
@@ -34,11 +35,35 @@ namespace AuthenticationJwt.Web.Controllers
 
         }
 
+        private UserModel AuthenticateUser(UserModel login)
+        {
+            UserModel user = null;
+            if (login.UserName.ToLower() == "maindeep")
+            {
+                user = new UserModel
+                {
+                    UserName = login.UserName,
+                    EmailAddress = login.EmailAddress,
+                    DateofJoining = login.DateofJoining
+
+
+                };
+                return user;
+            }
+        }
+
 
         private string GenerateJsonWebToken(UserModel userInfo)
         {
-            var securityKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+            var claims = new[]
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, userInfo.UserName),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim("DateofJoining", userInfo.DateofJoining.ToString()),
+                new Claim("EmailAddress", userInfo.EmailAddress)
+            };
             var token = new JwtSecurityToken(_configuration["Jwt:Issuer"],
               _configuration["Jwt:Issuer"],
               null,
