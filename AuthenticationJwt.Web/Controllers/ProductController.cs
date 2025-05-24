@@ -1,12 +1,13 @@
 ﻿using AuthenticationJwt.Web.Data;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace AuthenticationJwt.Web.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class ProductController : ControllerBase
     {
         private readonly MyAppDbContext _context;
@@ -15,19 +16,20 @@ namespace AuthenticationJwt.Web.Controllers
         {
             _context = context;
         }
+
         [HttpGet]
-        [Authorize]
-        public IActionResult GetProducts()
+        public async Task<IActionResult> GetProducts()
         {
             try
             {
-                var products = _context.Prodects.ToList();
+                var products = await _context.Prodects.ToListAsync();
                 if (products.Count == 0)
                 {
                     return NotFound("No products found.");
                 }
                 return Ok(products);
-            }catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 return BadRequest(ex.Message);
             }

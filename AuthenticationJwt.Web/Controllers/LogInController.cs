@@ -1,11 +1,6 @@
 ﻿using AuthenticationJwt.Web.Models;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
+using AuthenticationJwt.Web.Service;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 
 namespace AuthenticationJwt.Web.Controllers
 {
@@ -13,63 +8,33 @@ namespace AuthenticationJwt.Web.Controllers
     [ApiController]
     public class LogInController : ControllerBase
     {
-        private readonly IConfiguration _configuration;
+        private readonly IAuthService _authService;
 
-        public LogInController(IConfiguration configuration)
+        public LogInController(IAuthService authService)
         {
-            _configuration = configuration;
+            _authService = authService;
         }
 
         [HttpPost]
-        [AllowAnonymous]
-        public IActionResult LogIn([FromBody] UserModel user)
+        public async Task<IActionResult> LogIn([FromBody] LoginModel user)
         {
-            IActionResult response = Unauthorized();
-            var authenticatedUser = AuthenticateUser(user);
-            if (authenticatedUser != null)
+            var response = await _authService.LoginAsync(user);
+            if(response.IsSuccess)
             {
-                var tokenString = GenerateJsonWebToken(authenticatedUser);
-                response = Ok(new { token = tokenString });
+                return Ok(response);
             }
-            return response;
-
+            return BadRequest(response);
         }
 
-        private UserModel AuthenticateUser(UserModel login)
+        [HttpPost, Route("Register")]
+        public async Task<IActionResult> RegisterUser([FromBody] UserModel user)
         {
-            UserModel user = null;
-            if (login.UserName.ToLower() == "maindeep")
+            var response = await _authService.RegisterUser(user);
+            if (response.IsSuccess)
             {
-                user = new UserModel
-                {
-                    UserName = login.UserName,
-                    EmailAddress = login.EmailAddress,
-                    DateofJoining = login.DateofJoining
-
-
-                };
-                return user;
+                return Ok(response);
             }
-        }
-
-
-        private string GenerateJsonWebToken(UserModel userInfo)
-        {
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
-            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-            var claims = new[]
-            {
-                new Claim(JwtRegisteredClaimNames.Sub, userInfo.UserName),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim("DateofJoining", userInfo.DateofJoining.ToString()),
-                new Claim("EmailAddress", userInfo.EmailAddress)
-            };
-            var token = new JwtSecurityToken(_configuration["Jwt:Issuer"],
-              _configuration["Jwt:Issuer"],
-              null,
-              expires: DateTime.Now.AddMinutes(30),
-              signingCredentials: credentials);
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            return BadRequest(response);
         }
     }
 }

@@ -10,9 +10,6 @@ namespace AuthenticationJwt.Web.Data
         }
 
         public DbSet<Prodects> Prodects { get; set; }
-        public DbSet<UserModel> UserModel { get; set; }
-
-        
-
+        public DbSet<UserModel> Users { get; set; }
     }
 }
